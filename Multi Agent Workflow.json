@@ -1,0 +1,300 @@
+{
+  "name": "Multi Agent Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "9a3431cf-139c-4717-bb0d-e601d31f2e25",
+      "name": "Telegram Trigger",
+      "webhookId": "8e7138b5-0cfd-4ebf-8fd8-91483b10fb29",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -528,
+        0
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "qrVpWekSNhuSeCpP",
+          "name": "genai_shiva_bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=input: {{ $json.message.text }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are a helpful assistant replying to users on Telegram. For simple chat or general knowledge, answer directly. For anything needing current or researched information (news, prices, recent events, facts you are unsure of), you MUST call the 'AI Agent Tool' research tool with the user's question, then write the final reply using its result. Keep replies concise."
+        }
+      },
+      "id": "d8afd8be-70db-45c2-85e9-4c7dbf1803b6",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -304,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=telegram_{{ $json.message.chat.id }}"
+      },
+      "id": "3912c111-e846-4caa-a044-f3ba40f92787",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -208,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "model": "deepseek-v4-pro",
+        "options": {}
+      },
+      "id": "dc064dc3-8eb2-4c20-bc94-7fd27078ff9e",
+      "name": "DeepSeek",
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        224
+      ],
+      "credentials": {
+        "deepSeekApi": {
+          "id": "TMoDhVm2q0yPX6o4",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "abce7f41-5e3d-4e04-bbe6-19570c265ce4",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -464,
+        224
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "DH1QsIy3HORtwlde",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $fromAI('research_question', 'The full question or topic the user wants researched', 'string') }}",
+        "options": {
+          "systemMessage": "You are a research agent. Use the Google search tool to find accurate, up-to-date information for the question you are given. Run more than one search if needed. Return a concise, factual summary and mention key sources."
+        }
+      },
+      "id": "798a80f0-b6eb-4b7e-b99d-c604160d28ff",
+      "name": "AI Agent Tool",
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [
+        -96,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "436779e3-fb0b-4c9c-ada6-874bc57daf47",
+      "name": "OpenAI Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -128,
+        480
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "DH1QsIy3HORtwlde",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "q": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Search_Query__q_', ``, 'string') }}",
+        "location": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Location__location_', ``, 'string') }}",
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "id": "eb7afb69-412d-47a3-b48e-721c90ba223e",
+      "name": "Google search in SerpApi",
+      "type": "n8n-nodes-serpapi.serpApiTool",
+      "typeVersion": 1,
+      "position": [
+        64,
+        464
+      ],
+      "credentials": {
+        "serpApi": {
+          "id": "wKD9EzU9nLsu5okt",
+          "name": "SerpApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "0d2ab82d-3910-44ab-b546-a4970195a9f8",
+      "name": "Send a text message",
+      "webhookId": "b7105228-3ed8-4216-baa0-cb31fd5ff7e2",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        16,
+        0
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "qrVpWekSNhuSeCpP",
+          "name": "genai_shiva_bot"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent Tool",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google search in SerpApi": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Tool",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "42fbb33b-7417-4b55-afd6-8ce24fc0744f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f72631a3b0bd24d32f48881962f079c35014b10f4cf29673040d49f5a86a0523"
+  },
+  "nodeGroups": [],
+  "id": "YTurgc1UjHznD7dP",
+  "tags": []
+}
